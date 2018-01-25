@@ -1,0 +1,163 @@
+Sub homework()
+    Dim Current As Worksheet
+
+         ' Loop through all of the worksheets in the active workbook.
+         For Each Current In Worksheets
+             Current.Select
+             sortdata 'make sure data entries are orderd from earlist date to latest date by ticker
+             summarize
+             greatest
+             format
+         Next
+  
+End Sub
+
+Function summarize()
+    Dim i, j, sum, row_count As Long
+    Dim open_price, close_price As Double
+    
+    Range("I1").Value = "Ticker"
+    Range("J1").Value = "Yearly Change"
+    Range("K1").Value = "Percent Change"
+    Range("L1").Value = "Total Stock Volume"
+    
+    'get the total number of rows of data in column A
+    row_count = Application.WorksheetFunction.CountA(Columns("A:A"))
+    j = 2
+    sum = 0
+    open_price = Range("C2").Value
+ 
+    For i = 2 To row_count
+        If Range("A" & i + 1).Value <> Range("A" & i).Value Then
+            Range("I" & j).Value = Range("A" & i).Value
+            close_price = Range("F" & i).Value
+            Range("J" & j).Value = close_price - open_price
+            If open_price = 0 Then
+                Range("K" & j).Value = 0
+            Else
+                Range("K" & j).Value = (close_price - open_price) / open_price
+            End If
+            Range("L" & j).Value = sum + Range("G" & i).Value
+            j = j + 1
+            sum = 0
+            open_price = Range("C" & i + 1).Value
+        Else
+            sum = sum + Range("G" & i).Value
+            If open_price = 0 Then
+                open_price = Range("C" & i).Value
+            End If
+            
+        
+        End If
+           
+    Next i
+ 
+End Function
+
+Function format()
+'add the format and conditional format to the sheet
+    Dim list_count As Long
+    
+    'get the total number of rows of data in column I
+    list_count = Application.WorksheetFunction.CountA(Columns("I:I"))
+    
+    Range("K2:K" & list_count).Select
+    Selection.Style = "Percent"
+    Selection.NumberFormat = "0.00%"
+    
+    Range("J2:J" & list_count).Select
+    Selection.FormatConditions.Add Type:=xlCellValue, Operator:=xlGreater, _
+        Formula1:="=0"
+    Selection.FormatConditions(Selection.FormatConditions.Count).SetFirstPriority
+    With Selection.FormatConditions(1).Interior
+        .PatternColorIndex = xlAutomatic
+        .Color = 5287936
+        .TintAndShade = 0
+    End With
+    Selection.FormatConditions(1).StopIfTrue = False
+    
+    
+    Selection.FormatConditions.Add Type:=xlCellValue, Operator:=xlLess, _
+        Formula1:="=0"
+    Selection.FormatConditions(Selection.FormatConditions.Count).SetFirstPriority
+    With Selection.FormatConditions(1).Interior
+        .PatternColorIndex = xlAutomatic
+        .Color = 255
+        .TintAndShade = 0
+    End With
+    Selection.FormatConditions(1).StopIfTrue = False
+    
+    Cells.EntireColumn.AutoFit
+    Range("L1").Select
+     
+End Function
+
+Function sortdata()
+'sort column A an B to ensure data entries are ordered from earlist date to latest date by ticker
+    Dim list_count As Long
+    
+    'get the total number of rows of data in column A
+    list_count = Application.WorksheetFunction.CountA(Columns("A:A"))
+        
+        Sheets(ActiveSheet.Name).Sort.SortFields.Clear
+        Sheets(ActiveSheet.Name).Sort.SortFields.Add Key:=Range("A2:A" & list_count), _
+            SortOn:=xlSortOnValues, Order:=xlAscending, DataOption:=xlSortNormal
+        Sheets(ActiveSheet.Name).Sort.SortFields.Add Key:=Range("B2:B" & list_count), _
+            SortOn:=xlSortOnValues, Order:=xlAscending, DataOption:=xlSortNormal
+        With Sheets(ActiveSheet.Name).Sort
+            .SetRange Range("A1:G" & list_count)
+            .Header = xlYes
+            .MatchCase = False
+            .Orientation = xlTopToBottom
+            .SortMethod = xlPinYin
+            .Apply
+        End With
+    
+End Function
+
+Function greatest()
+    Dim i, min, max, total As Double
+    Dim list_count As Long
+    Dim ticker_min, ticker_max, ticker_total As String
+    
+    'get the total number of rows of data in column I
+    list_count = Application.WorksheetFunction.CountA(Columns("I:I"))
+    min = Range("K2").Value
+    max = Range("K2").Value
+    total = 0
+    ticker_min = Range("I2").Value
+    ticker_max = Range("I2").Value
+    ticker_total = Range("I2").Value
+ 
+    For i = 2 To list_count
+        If Range("K" & i).Value > max Then
+            max = Range("K" & i).Value
+            ticker_max = Range("I" & i).Value
+        End If
+        If Range("K" & i).Value < min Then
+            min = Range("K" & i).Value
+            ticker_min = Range("I" & i).Value
+        End If
+        If Range("L" & i).Value > total Then
+            total = Range("L" & i).Value
+            ticker_total = Range("I" & i).Value
+        End If
+    Next i
+    
+    Range("P1").Value = "Ticker"
+    Range("Q1").Value = "Value"
+    Range("O2").Value = "Greatest % Increase"
+    Range("O3").Value = "Greatest % Decrease"
+    Range("O4").Value = "Greatest Total Volume"
+    Range("P2").Value = ticker_max
+    Range("P3").Value = ticker_min
+    Range("P4").Value = ticker_total
+    Range("Q2").Value = max
+    Range("Q3").Value = min
+    Range("Q4").Value = total
+    
+    Range("Q2:Q3").Select
+    Selection.Style = "Percent"
+    Selection.NumberFormat = "0.00%"
+    
+End Function
